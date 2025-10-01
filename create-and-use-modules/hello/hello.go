@@ -12,8 +12,7 @@ func main() {
 	log.SetPrefix("greetings: ")
 	log.SetFlags(0)
 
-	var name string
-	// name = "Pujan"
+	name := "Pujan"
 	message, err := greetings.Hello(name)
 	if err != nil {
 		log.Fatal(err)

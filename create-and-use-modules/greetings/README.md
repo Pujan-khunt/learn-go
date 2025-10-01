@@ -11,3 +11,6 @@ Add error handling using the `errors` standard library package from go.
 ```go
 errors.New("error message")
 ```
+
+Implement random greeting message from a slice
+use the `math/rand` package
