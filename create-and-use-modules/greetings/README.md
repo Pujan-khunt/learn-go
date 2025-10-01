@@ -6,3 +6,8 @@ Same for packages but the format is `Package <package-name> <comment>`. Hover to
 
 A function starting with a capital letter is exported, meaning it can be called by a file not in the same package.
 This is known as a `exported name`.
+
+Add error handling using the `errors` standard library package from go.
+```go
+errors.New("error message")
+```
