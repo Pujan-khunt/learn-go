@@ -8,6 +8,8 @@ import (
 )
 
 func main() {
+	fmt.Println("Running executable...")
+
 	log.SetPrefix("greetings: ")
 	log.SetFlags(0)
 
@@ -19,4 +21,6 @@ func main() {
 	}
 
 	fmt.Println(messages)
+
+	fmt.Println("Executable executed successfully.")
 }
