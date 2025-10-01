@@ -17,3 +17,7 @@ Create this `go.work` file by running the following command and specifying all t
 ```bash
 go work init ./greetings ./hello
 ```
+
+
+fmt.Println() can take a map and print it directly
+

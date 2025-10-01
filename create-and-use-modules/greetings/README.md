@@ -14,3 +14,11 @@ errors.New("error message")
 
 Implement random greeting message from a slice
 use the `math/rand` package
+
+Creating a separate function to implement multi-input greeting function since editing the existing version,
+will change the function signature which will be **breaking change**. To preserve **backward compatibility**
+we create another function with different parameters.
+
+range <slice-name> returns 2 values
+1. index
+2. copy of the value at that index.

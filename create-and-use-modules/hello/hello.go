@@ -8,15 +8,15 @@ import (
 )
 
 func main() {
-	//
 	log.SetPrefix("greetings: ")
 	log.SetFlags(0)
 
-	name := "Pujan"
-	message, err := greetings.Hello(name)
+	names := []string{"Pujan", "Narendra", "Smit"}
+
+	messages, err := greetings.Hellos(names)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(message)
+	fmt.Println(messages)
 }
