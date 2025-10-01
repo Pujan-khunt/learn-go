@@ -50,3 +50,13 @@ Strict go code formatter
 
 4. delve
 Go debugger
+
+# Go things
+
+1. Declare a main package `package main`, this `main` package groups functions, and its made up all of the files in the same directory.
+meaning,
+All this file are under the same package
+src/a.go
+src/b.go
+src/c.go
+
