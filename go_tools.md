@@ -59,3 +59,10 @@ Enables workspace mode in a go project. Makes working with multiple modules simp
 
 - It uses a go.work file for listing all the modules which are part of the workspace. The go toolchain
 will now use the local versions if available in the workspace rather then getting from a remote registry.
+
+# Go get command
+dependency manager of your local project. Downloads the source code of the dependencies and updates the go.mod file.
+
+- Go get adds a new line with require inside the go.mod file
+- Downloads the src code for the dependency into the local module cache (usually in $GOPATH/pkg/mod)
+- In Go(v.1.17+) It doesn't build or install executables. This is the biggest change from older versions of go.
