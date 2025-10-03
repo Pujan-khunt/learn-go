@@ -19,6 +19,27 @@ type Album struct {
 	Price  float32
 }
 
+func AlbumByID(id int) (Album, error) {
+	var album Album
+
+	// Since we are only expecting a single row as a response, we use the QueryRow method
+	// QueryRow doesn't return an error and always returns a non-nil value.
+	row := db.QueryRow("SELECT * FROM album WHERE id = ?", id)
+
+	// QueryRow waits until the user uses the row.Scan method which will throw the error(if any)
+	// which was supposed to be returned by the QueryRow function.
+	if err := row.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
+		// This error(if any) is returned by the QueryRow function.
+		// Checked error for query returning zero rows.
+		if err == sql.ErrNoRows {
+			return album, fmt.Errorf("albumById %d: no such album", id)
+		}
+		// Unchecked error
+		return album, fmt.Errorf("albumById: %d: %v", id, err)
+	}
+	return album, nil
+}
+
 func AlbumsByArtist(artistName string) ([]Album, error) {
 	// Album slice to hold data from returned rows.
 	var albums []Album
@@ -76,8 +97,16 @@ func main() {
 	artistName := "John Coltrane"
 	albums, err := AlbumsByArtist(artistName)
 	if err != nil {
-		log.Fatalf("Error fetching albume of the artist: %q. Error: %v\n", artistName, err)
+		log.Fatalf("Error fetching album of the artist: %q. Error: %v\n", artistName, err)
 	}
 
 	log.Printf("Albums Found: %v\n", albums)
+
+	id := 2
+	album, err := AlbumByID(id)
+	if err != nil {
+		log.Fatalf("Error fetching album with id: %d. Error: %v\n", id, err)
+	}
+
+	log.Printf("Album found: %v\n", album)
 }
