@@ -1,4 +1,4 @@
-module example/data-access
+module album-api
 
 go 1.25.1
 

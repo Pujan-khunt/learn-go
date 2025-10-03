@@ -20,7 +20,7 @@ mysql -h 127.0.0.1 -P 3306 -u root -p
 
 ## Run the SQL file for creating table and inserting data
 ```bash
-source /path/to/sql/file
+source /home/pujan/Desktop/learn/go/5.sql-database-access/data-access/create-tables.sql
 ```
 
 ## Methods and Functions in Go
