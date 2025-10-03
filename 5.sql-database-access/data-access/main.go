@@ -59,12 +59,13 @@ func main() {
 
 	var err error
 	// Pass the config object after converting it to a connection string.
-	// Open the connection to the running Mysql db process.
+	// sql.Open will verify the driver availability and allocate memory for a sql.DB object.
 	db, err = sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
 		log.Fatal("Error while connecting to MySQL DB. ", err)
 	}
 
+	// Creates the actual connection to the mysql db using the connection string and the driver provided earlier
 	pingErr := db.Ping()
 	if pingErr != nil {
 		log.Fatal("Error checking connection with DB. ", err)
