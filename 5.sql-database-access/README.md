@@ -99,3 +99,60 @@ using the connection string and the driver specified.
 
 If any of these steps fail, like the connection string is incorrect, db is offline, it will return an error.
 This is why its a standard way to verify a connection to your database configuration at application startup.
+
+## Understanding sql.DB struct
+> sql.DB doesn't represent a single Connection, but rather a Connection Pool.
+
+The sql.DB object is designed to be a long living object that you create once and share throughout your application.
+
+Its safe for concurrent use from multiple goroutines.
+
+Its main job is to manage the pool of underlying db connections to improve performance and resource management.
+
+Opening a new database connection is an expensive operation.
+
+### Why is opening a new db connection expensive?
+Well you might think that as you need to make network requests to the DB server which might be located in another country, it might take a while for the request to reach there. But its not about the distance.
+
+Its about the procedure that needs to be followed by the Server (Golang backend) and the DB (database server) to **establish a trusted communication channel**.
+ 
+### What happens when you want to create a new db connection?
+1. **TCP Handshake**: Before any data can be sent, you need to establish a reliable network connection. Which begins with a TCP handshake where both sides send each others' ACK numbers and synchronize using the receiving ACK numbers on both sides.
+
+This takes atleast one full round-trip between your backend and the DB to only just agree to talk.
+
+2. **SSL/TLS Negotiation**: For a secure connection both db and server need to exchange the certificates to verify the identity of other, agree on an encryption algorithm, and generate unique session keys, which involves public-key cryptograph, which is computationally intensive and will require several more round trips.
+
+3. **Database Authentication**: The backend sends the DB credentials which will then be verified the running DB process on the DB server.
+
+4. **Session Setup**: The DB server allocates memory and resources for this new session. It also setups information like character set, time zone, transaction isolation level, and prepares its internal state to handle queries from the backend.
+
+### Reusing Connections To Save Time
+> Reusing connections is possible and is the entire goal of connection management.
+
+### What does it mean to reuse an existing db connection?
+It means once an existing db connection has done all the procedure of establishing a secured communication channel, you reuse the same channel and pass the subsequent queries over the same channel, essentially bypassing the TCP Handshakes, SSL/TLS Negotiations and the DB auth setup.
+
+Now that the application (Golang backend) can reuse existing applications, we can have multiple goroutines use the same pool and allow them to use the existing DB connections, **but not at the exact same time**. This is where the connection pool comes in.
+
+Now that we have allowed multiple goroutines to use existing DB connections, we need to make sure that there are no 2 goroutines that are using the same DB connection to talk to the DB, since this will cause issues.
+
+### Who will manage this conflict issue?
+> Ans: a `Connection Pool`
+
+A connection pool is a cache of active, ready-to-use db connections that are managed by the application's database driver. (in Go, this is the sql.DB object)
+
+Hence sql.DB is about managing the connection pool.
+
+If a goroutine needs to query the db, it needs to have *sql.DB object, which will provide the goroutine with a idle-connection (connection which isn't being used but is active and ready-to-use)
+
+If a goroutine needs to query the db, it needs to have *sql.DB object, which will provide the goroutine with a idle-connection (connection which isn't being used but is active and ready-to-use).
+
+The sql.DB also has a mutex which is used for locking. It prevents other goroutines to access DB connections which aren't idle and are being used by other goroutines.
+
+Once the db query part is finished and the goroutine no longer requires the db connection, it will mark the connection as idle using 
+```go
+defer rows.Close()
+```
+
+Now the connection pool will add the connection to the list of idle connections ready to use by other goroutines.
