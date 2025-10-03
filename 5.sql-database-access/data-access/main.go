@@ -19,6 +19,22 @@ type Album struct {
 	Price  float32
 }
 
+func AddAlbum(album Album) (int64, error) {
+	// Exec() is used to run queries which don't return any rows.
+	result, err := db.Exec("INSERT INTO album (title, artist, price) VALUES (?, ?, ?)", album.Title, album.Artist, album.Price)
+	if err != nil {
+		return 0, fmt.Errorf("addAlbum: %v", err)
+	}
+
+	// Get the ID of the insertion to return to the caller.
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("addAlbum: %v", err)
+	}
+
+	return id, nil
+}
+
 func AlbumByID(id int) (Album, error) {
 	var album Album
 
@@ -91,22 +107,32 @@ func main() {
 	if pingErr != nil {
 		log.Fatal("Error checking connection with DB. ", err)
 	}
-
 	log.Println("MySQL DB connected and ready for operation.")
 
+	// Get all albums of this artist.
 	artistName := "John Coltrane"
 	albums, err := AlbumsByArtist(artistName)
 	if err != nil {
 		log.Fatalf("Error fetching album of the artist: %q. Error: %v\n", artistName, err)
 	}
-
 	log.Printf("Albums Found: %v\n", albums)
 
+	// Get the album by this id.
 	id := 2
 	album, err := AlbumByID(id)
 	if err != nil {
 		log.Fatalf("Error fetching album with id: %d. Error: %v\n", id, err)
 	}
-
 	log.Printf("Album found: %v\n", album)
+
+	// Add a new album with these values
+	albumID, err := AddAlbum(Album{
+		Title:  "Sajna",
+		Artist: "Pujan Khunt",
+		Price:  200,
+	})
+	if err != nil {
+		log.Fatalf("Error adding album: %v", err)
+	}
+	log.Printf("Album added with id: %d", albumID)
 }
