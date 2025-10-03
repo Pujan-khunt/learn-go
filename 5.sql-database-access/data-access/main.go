@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 
@@ -10,6 +11,42 @@ import (
 
 // Represents the DB handle.
 var db *sql.DB
+
+type Album struct {
+	ID     int64
+	Title  string
+	Artist string
+	Price  float32
+}
+
+func AlbumsByArtist(artistName string) ([]Album, error) {
+	// Album slice to hold data from returned rows.
+	var albums []Album
+
+	// Run select query on DB to get albums with a specified artist.
+	rows, err := db.Query("SELECT * FROM album WHERE artist = ?", artistName)
+	if err != nil {
+		return nil, fmt.Errorf("albumsByArtist %q: %v", artistName, err)
+	}
+	defer rows.Close()
+
+	// Loop through returned rows to convert data into the strongly typed object.
+	for rows.Next() {
+		var album Album
+		if rowScanErr := rows.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); rowScanErr != nil {
+			return nil, fmt.Errorf("albumsByArtist %q: %v", artistName, rowScanErr)
+		}
+		albums = append(albums, album)
+	}
+
+	// rows.Err returns an error (if any) indicating that the rows.Next() was terminated due to rows exhaustion or an error was occured.
+	// Important to check rows.Err() after looping through all rows
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("albumsByArtist: %q: %v", artistName, err)
+	}
+
+	return albums, nil
+}
 
 func main() {
 	// Create a config object and pass relevant values.
@@ -22,6 +59,7 @@ func main() {
 
 	var err error
 	// Pass the config object after converting it to a connection string.
+	// Open the connection to the running Mysql db process.
 	db, err = sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
 		log.Fatal("Error while connecting to MySQL DB. ", err)
@@ -33,4 +71,12 @@ func main() {
 	}
 
 	log.Println("MySQL DB connected and ready for operation.")
+
+	artistName := "John Coltrane"
+	albums, err := AlbumsByArtist(artistName)
+	if err != nil {
+		log.Fatalf("Error fetching albume of the artist: %q. Error: %v\n", artistName, err)
+	}
+
+	log.Printf("Albums Found: %v\n", albums)
 }
