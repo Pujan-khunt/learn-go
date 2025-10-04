@@ -178,3 +178,44 @@ func main() {
 In this example, the `printMessage()` function waits for 2 seconds, then sends the message on the channel.
 The main function is running concurrently while this is happening and prints the `Hello from main function.` message 
 and then receives the message from the channel.
+
+
+## Wait Groups
+A Wait Group waits for Goroutines to finish. It's a struct type and maintains a counter, which represents the active Goroutines actively executing.
+
+```go
+package main
+
+import (
+    "fmt"
+    "sync"
+    "time"
+)
+
+// Creating a global wait group.
+var wg sync.WaitGroup
+
+func worker(id int) {
+    // Mark the Goroutine as completed which will update the internal counter, and as soon as the 
+    // counter of the global wg (wait group) reaches zero, main goroutine is terminated.
+    defer wg.Done() 
+    fmt.Printf("Worker %d starting\n", id)
+     // pausing the Goroutine to mimic execution of worker.
+    time.Sleep(time.Second)
+    fmt.Printf("Workder %d is done\n.", id)
+}
+
+func main() {
+    for i := 1; i <= 5; i++ {
+        wg.Add(1) // Increments the counter to indicate that a Goroutine has been created.
+        go worker(i)
+    }
+    wg.Wait() // Waits until the internal counter becomes zero.
+}
+```
+
+In this above code example, we add 1 to the `wg` counter every time we create a new Goroutine.
+Then call `wg.Done()` once the Goroutine function is finished executing, which decrements the counter of `wg`.
+`wg.Wait()` will block the main goroutine until the counter reacher zero.
+
+Wait groups are simple counters, which are simple but not massively beneficial, until we introduce **channels**.
