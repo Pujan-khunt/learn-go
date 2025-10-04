@@ -49,9 +49,106 @@ func main() {
     time.Sleep(time.Second)
 }
 ```
-
 We are running the `printMessage()` function inside a separate Goroutine. Both `printMessage()` and `main()` are being run concurrently.
 
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	count("sheep")
+	count("fish")
+}
+
+func count(animal string) {
+	for i := 1; true; i++ {
+		fmt.Printf("%d %s", i, animal)
+		time.Sleep(time.Millisecond * 500)
+	}
+}
+```
+
+For this example, the `count("fish")` function will never be called since the `count("sheep")` will never terminate due to the infinite loop.
+
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	go count("sheep")
+	count("fish")
+}
+
+func count(animal string) {
+	for i := 1; true; i++ {
+		fmt.Printf("%d %s", i, animal)
+		time.Sleep(time.Millisecond * 500)
+	}
+}
+```
+
+The `go` keyword here creates a new Goroutine which and the sole task of that Goroutine is to execute that function call.
+We can create a Goroutine since both tasks (both function calls) are independent of each other and don't change the final outcome.
+
+Here the flow would go as, the stack pointer would begin executing the main function and would see the go keyword and will create a new
+Goroutine which will run concurrently as the main Goroutine would continue running the rest of the main function concurrently, i.e. executing
+the `count("fish")` function call.
+
+> A very interesting thing happens in this example.
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	go count("sheep")
+	go count("fish")
+}
+
+func count(animal string) {
+	for i := 1; true; i++ {
+		fmt.Printf("%d %s", i, animal)
+		time.Sleep(time.Millisecond * 500)
+	}
+}
+```
+
+Now that both function calls are being handled by separate Goroutines, both should run concurrently, right? Kind of.
+If you execute the above example code, you will find that nothing is printed to the stdout.
+
+Reason: Main Goroutine finishes executing once it creates 2 new Goroutines for executing both function calls.
+The job of the main Goroutine is to execute the `main()` function and it does that pretty quickly here and finishes.
+
+In Go, once the main Goroutine finishes, the program/process terminates no matter what the other Goroutines are doing. 
+In the other examples the main Goroutine was always busy doing something and hence the program wasn't terminating instantly.
+
+To actually make the above example code work, we need to make the main function busy, that can be done by something like this:
+```go
+time.Sleep(time.Second * 100)
+```
+
+This will keep the main function busy for 100 seconds and the loops will run for approximately 200 iterations.
+
+Another approach could be to ask for user input, since the go process will wait for the user to input something, as long as the user doesn't do that, 
+the main function is busy waiting.
+```go
+fmt.Scanln()
+```
+
+Both of above techniques can only be used for testing purposes, since they are indeterministic and unusable for actual production code.
+The most reccommended way is to use a `WaitGroup`
 
 ## Channels
 > Goroutines execute tasks concurrently. Channels provide a way to synchronize and control these tasks.
