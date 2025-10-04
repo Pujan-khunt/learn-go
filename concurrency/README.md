@@ -9,6 +9,7 @@ Goroutines help us to write code which is independent of code from other Gorouti
 By default, Go only uses a single OS thread, regardless of the number of Goroutines.
 However, with the help of the **Go Runtime Scheduler** and `GOMAXPROCS` set to the number of logical processors, we can achieve true parallel execution of Goroutines.
 
+
 ## Advantages and Disadvantages of Concurrency
 
 ### Advantages:
@@ -25,7 +26,58 @@ However, with the help of the **Go Runtime Scheduler** and `GOMAXPROCS` set to t
 
 3. **Debugging and Profiling**: Debugging and profiling Go applications can be complex, due to the fact that the behaviour of Goroutines is indeterministic. Go provides the `pprof` package and a race detector, but understanding these tools and using them effectively requires much understanding and time.
 
+
 ## Goroutines
+> A Goroutine is a lightweight thread of execution. Goroutines are functions/methods which concurrently run with other Goroutines.
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func printMessage() {
+    fmt.Println("Hello from a Goroutine.")
+}
+
+func main() {
+    go printMessage()
+    fmt.Println("Hello from the main function.")
+    // Wait for the Goroutine to finish.
+    time.Sleep(time.Second)
+}
+```
+
+We are running the `printMessage()` function inside a separate Goroutine. Both `printMessage()` and `main()` are being run concurrently.
 
 
+## Channels
+> Goroutines execute tasks concurrently. Channels provide a way to synchronize and control these tasks.
+> Channels are a way through which you can send and receive values using the channel operator `<-`.
 
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func printMessage(message chan string) {
+    time.Sleep(time.Second * 2)
+    message <- "Hello from Goroutine"
+}
+
+func main() {
+    message := make(chan string)
+    go printMessage(message)
+    fmt.Println("Hello from main function.")
+    fmt.Println(<-message)
+}
+```
+
+In this example, the `printMessage()` function waits for 2 seconds, then sends the message on the channel.
+The main function is running concurrently while this is happening and prints the `Hello from main function.` message 
+and then receives the message from the channel.
