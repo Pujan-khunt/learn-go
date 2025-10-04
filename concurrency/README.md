@@ -219,3 +219,89 @@ Then call `wg.Done()` once the Goroutine function is finished executing, which d
 `wg.Wait()` will block the main goroutine until the counter reacher zero.
 
 Wait groups are simple counters, which are simple but not massively beneficial, until we introduce **channels**.
+
+
+## Channels
+A channel is a way for Goroutines to communicate with each other. Till now, we are only printing from the worker function that is executed by the Goroutine,
+but what if we wanted to send data back to the main goroutine which called it. Then we use channels.
+
+A channel is like a pipe through which you can send a message or receive a message.
+
+Accept channel as an argument in the function which the goroutine will execute.
+
+Channels have a type as well. For eg. a `string channel` can only send or receive data of type `string`
+
+> **Fun Fact**: the data type of a channel can be another channel too.
+
+> **NOTE**: sending and receiving to and from a channel is blocking. Meaning the goroutine will be blocked until the other party does thier job.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	c := make(chan string) // Create a channel of type string
+	go count("sheep", c)   // Create a Goroutine passing the function arguments along with a channel of type string
+
+	// If the msg: <- c is still trying to receive a message but the goroutine has already finished then it will result in a deadlock. Try converting the below for loop into an infinite one, see it in action (only works without a `close()`).
+	for i := 1; i <= 10; i++ {
+		// Create a variable of type string to receive string output from the above created goroutine's output
+		// When receiving from a channel, you can create 2 variables, one which will store the data from the channel which must of the same type as the channel
+		// Second is a boolean indicating if the channel is open or not.
+		msg, open := <-c
+
+		if open {
+			fmt.Println(msg)
+		} else {
+			fmt.Println("Channel is closed: ", i)
+		}
+
+	}
+	// There exists a much cleaner syntax of this version
+	// Here instead of checking for the open and receiving the channel data you can loop over the range of a channel, which will essentially do the same thing.
+	// for msg := range c {
+	// 	fmt.Println(msg)
+	// }
+}
+
+func count(animal string, c chan string) {
+	for i := 1; i <= 5; i++ {
+		// fmt.Printf("%d %s", i, animal)
+		c <- fmt.Sprintf("%d %s", i, animal) // Sends the output from the format.Sprintf() command into the channel.
+		time.Sleep(time.Millisecond * 500)
+	}
+
+	// Never close the channel as a receiver. Here its ok since we are at the sender's end.
+	// WHY? If the sender tries to send the data after receiver closes the channel, the program will panic.
+	close(c) // Close the channel so the receiving end doesn't get deadlocked when still trying to receive even after the goroutine has ended.
+}
+```
+
+A deadlock situation in the below code.
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    c := make(chan string)
+    c <- "Hello World!"
+
+    msg := <- c
+    fmt.Println(msg)
+}
+```
+
+One might think, that the above code, creates a channel, sends the "Hello World!" string 
+and receives that same string in the same Goroutine and prints to the stdout.
+But you would notice after running this code, you are getting a deadlock.
+
+**WHY?**
+The same reason as mentioned in the above NOTE. Sending and receiving to and from a channel is blocking.
+Hence the main goroutine will be blocked at the line `c <- "Hello World!` trying to wait for another goroutine
+to consume that string that the main goroutine just sent this channel.
