@@ -156,3 +156,43 @@ defer rows.Close()
 ```
 
 Now the connection pool will add the connection to the list of idle connections ready to use by other goroutines.
+
+
+## 1. Controllers (or Handlers)
+
+Responsible for the following tasks:
+
+- Receiving the HTTP request
+- parsing the request body, headers, query string, params etc.
+- calling the appropriate **Service** to do the actual work.
+- Taking the result from the service and formatting a HTTP response with it.
+
+What it shouldn't do:
+
+- It shouldn't contain any business logic
+- It shouldn't directly talk to the database server.
+
+
+## 2. Service
+
+Responsible for the following tasks:
+
+- Using one or more **Repositories** to perform any kind of operation on data.
+- Using business logic to perform complex validation. Eg. An artist cannot publish more than 10 albums in a year.
+- Enriching data (e.g. after fetching the album from the repository, also fetch the artist details using another service.)
+
+What it shouldn't do:
+
+- It should have no knowledge of the HTTP request and response objects.
+
+## 3. Repository
+
+Responsible for the following tasks:
+
+- Communicating with data sources (like database, file, or an external API)
+- Abstracting the data persistence logic. It provides simple methods like GetById, Save, Update, Delete etc.
+- Contains the actual database queries.
+
+What it shouldn't do:
+
+- It shouldn't contain any business logic. Its only concern is data in and out of storage.
