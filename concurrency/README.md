@@ -305,3 +305,107 @@ But you would notice after running this code, you are getting a deadlock.
 The same reason as mentioned in the above NOTE. Sending and receiving to and from a channel is blocking.
 Hence the main goroutine will be blocked at the line `c <- "Hello World!` trying to wait for another goroutine
 to consume that string that the main goroutine just sent this channel.
+
+## Select Keyword
+
+### Why is Select keyword needed?
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    c1 := make(chan string)
+    c2 := make(chan string)
+
+    // Goroutine which is sends a message to the c1 channel every 500ms
+    go func() {
+        for {
+            time.Sleep(time.Millisecond * 500)
+            c1 <- "Sending message every 500ms"
+        }
+    }
+
+    // Goroutine which is sends a message to the c2 channel every 2s
+    go func() {
+        for {
+            time.Sleep(time.Second* 2)
+            c1 <- "Sending message every 2s"
+        }
+    }
+
+    for {
+        fmt.Println(<- c1)
+        fmt.Println(<- c2)
+    }
+}
+```
+
+The problem that will be faced in this above example code is that:
+t = 0.5s: Sending message every 500ms
+t = 2.0s: Sending message every 2s
+t = 2.5s: Sending message every 500ms
+t = 4.0s: Sending message every 2s
+t = 4.5s: Sending message every 500ms
+t = 6.0s: Sending message every 2s
+
+Even though the first goroutine is capable of sending messages every 500ms its getting blocked because of the slower goroutine.
+
+To solve this issue, we use `select` statement.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	c1 := make(chan string)
+	c2 := make(chan string)
+
+	// Goroutine which is sends a message to the c1 channel every 500ms
+	go func() {
+		for {
+			time.Sleep(time.Millisecond * 500)
+			c1 <- "Sending message every 500ms"
+		}
+	}()
+
+	// Goroutine which is sends a message to the c2 channel every 2s
+	go func() {
+		for {
+			time.Sleep(time.Second * 2)
+			c1 <- "Sending message every 2s"
+		}
+	}()
+
+	// Infinite loop
+	for {
+		// Whenever there is a channel ready to transmit data, execute the code below that case statement.
+		// Not the fast Goroutine will not be blocked by the slow Goroutine.
+		select {
+		case msg1 := <-c1:
+			fmt.Println(msg1)
+		case msg2 := <-c2:
+			fmt.Println(msg2)
+		}
+	}
+}
+```
+
+Now the output will look like:
+t = 0.5s: Sending message every 500ms
+t = 1.0s: Sending message every 500ms
+t = 1.5s: Sending message every 500ms
+t = 2.0s: Sending message every 500ms
+t = 2.0s: Sending message every 2s
+t = 2.5s: Sending message every 500ms
+t = 3.0s: Sending message every 500ms
+t = 3.5s: Sending message every 500ms
+t = 4.0s: Sending message every 500ms
+t = 4.0s: Sending message every 2s
