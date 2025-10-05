@@ -67,6 +67,10 @@ The scheduler which runs on every thread(M) was responsible for selecting a goro
 
 2. **Threads frequently juggled goroutine between each other**: This causes performance issues since the parent and child goroutines will be separted on to different threads, which will cause performance issues. It also caused a lot of kernel-space context switches.
 
+3. **Wasted thread-local cache memory for blocked threads**: Every thread `M` has a thread-local cache so that it can use it for allocation or to hold free memory.
+The problem is that mcache is only use by threads which actually execute Go code, and the ratio of threads executing go code to the ones which don't (because of being blocked by system calls or any other reason) can go upo 1:100. Each mcache thread can take upto 2MB per thread, it can result into hundreds of MB of memory being wasted.
+And this memory is not freed until the thread is destroyed.
+
 #### Why Parent and Child Goroutines Executing on Different Kernel Threads Isn't Optimal?
 
 The simple answer to this question is: **CPU Cache Locality**. Its a technique where a process takes advantage of the CPU caches,
@@ -132,3 +136,25 @@ to what the kernel stores in a kernel-space context switch). After storing this 
 (incomplete)
 
 
+## Scheduler Enhancement
+
+### 1. Introduction of a Local Run Queue
+Each thread (M) now has their own local run queue with Goroutines (G) inside it. When a Goroutine(G) spawns another Goroutine(G1) on thread (M), (G1) is 
+put in the local run queue of (M), if the  local run queue of (M) is full, then it will be placed in the global run queue. When a thread (M) is ready to execute
+goroutines it will first check its local run queue for goroutines, if its empty then it will look inside the global run queue.
+
+![Proposal 1](../images/proposal_1.png)
+
+This proposal solves the problems, but introduces performance overheads. When multiple threads are blocked because of system calls,
+the goroutines for each thread in the local run queue are stalled/blocked too. To solve this issue, the scheduler should allow,
+other non-blocked threads to steal the goroutines from other threads' local run queue. This solution is possible but not feasible,
+since its computationally expensive to scan the local run queues of all the blocked threads to find Goroutines.
+
+### 2. Introduction of Logical Processors (P)
+
+P is a `logical` processor it means that it only pretends to execute Go code but in reality only a `M` can execute a Goroutine when its attached to a `P`.
+The thread's local run queue and the mcache are now owned by `P`'s rather than `M`'s.
+
+This solves the 3rd problem in the list mentioned above. Since `mcache` is now `P`-local, when `G` faces a blocking system call, `M` is detached from `P`, now the memory consumption stays low when a large number of `M`'s executing `G`'s are blocked, which wasn't the case earlier. The **stealing mechanism** is also efficient when `P` is limited.
+
+![Proposal 2](../images/proposal_2.png)
