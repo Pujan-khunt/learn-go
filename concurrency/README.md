@@ -637,3 +637,18 @@ Imagine this scenario where the processing that happens after receiving the resu
 You have 2 options to solve this issue:
 1. Create separate a goroutine for each processing task
 2. Put the entire consuming logic inside a goroutine itself.
+
+## Go Runtime Scheduler Juggling Goroutines
+
+Essentially any kind of instruction is executed by the CPU. The OS provides a way for processes wanting to achieve multitasking via creation of threads.
+Go creates a binary file of your code and runs it. The binary file is running as a process so it has the ability to create native OS threads.
+
+Go uses this M:N model where M represents the number of Native OS Threads while N represents Goroutines. The ratio is such that a few Native OS Threads
+handle many Goroutines.
+
+So essentially a single Native OS Thread is responsible for executing multiple Goroutines. Now if a Goroutine contains a blocking call like a syscall for reading
+from a network or disc, the OS thread will get blocked and will enter the "waiting state", until the kernel executes this syscall. Now while the kernel is executing,
+the thread is in waiting state, and hence all other goroutines which are assigned to that currently idle native thread are stalled, so the Goruntime scheduler 
+either creates a new native thread (based on **GOMAXPROCS**) or juggles/shuffles those stalled goroutines to another native OS thread which isn't in a waiting state and is ready to run.
+
+Also the go runtime scheduler doesn't assign new goroutines to that idle native OS thread, since there is no point in doing so.
