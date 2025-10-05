@@ -652,3 +652,23 @@ the thread is in waiting state, and hence all other goroutines which are assigne
 either creates a new native thread (based on **GOMAXPROCS**) or juggles/shuffles those stalled goroutines to another native OS thread which isn't in a waiting state and is ready to run.
 
 Also the go runtime scheduler doesn't assign new goroutines to that idle native OS thread, since there is no point in doing so.
+
+## Go Runtime Scheduler
+Worth reading once.
+> Great Resource Explaining In Depth About the Go Runtime Scheduler. [Link](https://nghiant3223.github.io/2025/04/15/go-scheduler.html)
+
+### What is it?
+Inside every binary every created by the Go compiler, there exists a piece of code which manages the runtime for that Go binary. It manages stuff like
+memory management, goroutines, channels, garbage collection, and even **scheduling**.
+
+The Go Runtime Scheduler is also part of this Runtime package inside every go binary file. You don't import it, its always there, when you run Go.
+
+The Go runtime isn't a separate process or a system-level daemon, its the code which is linked when compiling a Go file.
+
+There isn't a separate "scheduler thread", the scheduling logic runs on the same threads as the program logic does.
+
+### What doe it do?
+- Multiplexes multiple Goroutines(M) into a few native OS threads(N), following a M:N model.
+- **Handless blocking** of Goroutine (as discussed in the above section)
+- **Preemption**: It can preempt longer running Goroutines to keep things fair and responsive.
+- Keeps the CPU busy, ensures that no CPU cores stay idle.
